@@ -1,12 +1,12 @@
 # Consultas del proyecto finnal de SIG - CentroGeo
 
 ## Códigos utilizados para depurar base de datos
-| -- Crear extensiones |
-|create extension postgis;|
+`-- Crear extensiones`
+`create extension postgis;`
 
-|-- Eliminar columnas que no tienen datos|
-|ALTER TABLE desinventar|
-|DROP COLUMN magnitude;|
+`-- Eliminar columnas que no tienen datos`
+`ALTER TABLE desinventar`
+`DROP COLUMN magnitude;`
 
 ALTER TABLE desinventar 
 DROP COLUMN disasterid;

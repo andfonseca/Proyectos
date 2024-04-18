@@ -1,9 +1,7 @@
 # Consultas del proyecto final de SIG - CentroGeo
-Como le hago para trabajar
-mejor
+En el siguiente archivo se evidencian las consultas realizadas a lo largo del proyecto final denominado  
+Mapeo de eventos por deslizamientos a partir del análisis de datos oficiales y no oficiales en Medellín, Colombia
 
-
-Otros
 ## Códigos utilizados para depurar base de datos
 `-- Crear extensiones
 create extension postgis;`
@@ -428,10 +426,8 @@ UPDATE barrio_vereda_2
 SET grado_amenaza = NULL;
 ```
 ## Códigos utilizados para crear mapas
-```
--- Validación dentro de los límites administrativos de Medellín
-	-- Validación de los datos del SIMMA
-```
+`-- Validación dentro de los límites administrativos de Medellín`  
+`		-- Validación de los datos del SIMMA`
 ```sql
 create table simma_v as
 select s.geom, id, inv_movimi, tipo, subtipo, a. altura, dn
@@ -443,8 +439,9 @@ where a.altura >= 1.500;
 create index idx_geom_on_simma_v
 on simma_v
 using GIST (geom);
-
-	-- Validación de los datos de DI
+```
+`	-- Validación de los datos de DI`
+```sql
 create table di_v as
 select d. *, a.dn
 from deslizamientos d
@@ -456,10 +453,10 @@ create index idx_geom_on_di_v
 on di_v
 using GIST (geom);
 ```
-`-- Creación de buffers para identificar coincidencias
-	-- Inicialmente, verificamos los elementos de di_v que están en cercanías a los 
-	-- elementos de simma_v
-		-- buffer inicial`
+`-- Creación de buffers para identificar coincidencias`  
+`	-- Inicialmente, verificamos los elementos de di_v que están en cercanías a los`  
+`	-- elementos de simma_v`  
+`		-- buffer inicial`
 ```sql
 select id, ST_Buffer(geom, 1000) AS geom_buffer
 from simma_v;
@@ -471,8 +468,9 @@ join (
   from simma_v
 ) as buffers
 on ST_Within(di.geom, buffers.geom_buffer);
-
-		-- Verificación de elementos por fuera del buffer
+```
+`		-- Verificación de elementos por fuera del buffer`
+```sql
 create table deslizamientos_v as
 select di.*
 from di_v di
@@ -487,18 +485,18 @@ create index idx_geom_on_deslizamientos_v
 on deslizamientos_v
 using GIST (geom);
 ```
-`-- A continuación, hacemos la clusterización de los datos en CrimeStat
-	-- En el software CrimeStat, cargamos la capa de deslizamientos validadeos, o 
-	-- deslizamientos_v. Utilizaremos el método de Nearest Neighbor Hierarchical
-	-- Spatial Clustering (NNH) para generar una capa Convex Hull de agrupación para
-	-- nuestros puntos. Los criterios son: Agrupar grupos de 3 puntos que 
-	-- se encuentren en una proximidad de 500 metros. La capa resultante es CNNH1,
-	-- la cual cargamos en QGIS y desde allí la vinculamos a nuestra base de datos.
+`-- A continuación, hacemos la clusterización de los datos en CrimeStat`  
+`	-- En el software CrimeStat, cargamos la capa de deslizamientos validadeos, o`  
+`	-- deslizamientos_v. Utilizaremos el método de Nearest Neighbor Hierarchical`  
+`	-- Spatial Clustering (NNH) para generar una capa Convex Hull de agrupación para`  
+`	-- nuestros puntos. Los criterios son: Agrupar grupos de 3 puntos que`  
+`	-- se encuentren en una proximidad de 500 metros. La capa resultante es CNNH1,`  
+`	-- la cual cargamos en QGIS y desde allí la vinculamos a nuestra base de datos.``  
 
--- Para finalizar la validación, identificaremos los centroides de los convex hull
-	-- generados.
+`-- Para finalizar la validación, identificaremos los centroides de los convex hull`  
+`	-- generados.`  
 
-	-- Creamos la columna de centroide en CNNH1`
+`	-- Creamos la columna de centroide en CNNH1`
 ```sql
 alter table "CNNH1" 
 add column centroide GEOMETRY(Point);
@@ -507,8 +505,8 @@ add column centroide GEOMETRY(Point);
 update "CNNH1"
 set centroide = ST_Centroid(geom);
 ```
-`-- A continuación, generaremos buffers de 500 metros alrededor de los centroides 
-	-- generados`
+`-- A continuación, generaremos buffers de 500 metros alrededor de los centroides`  
+`	-- generados`
 ```sql
 create table eventos_posibles as
 select id, st_buffer(centroide, 500) as buffer

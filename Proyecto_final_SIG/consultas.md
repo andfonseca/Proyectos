@@ -1,7 +1,5 @@
 # Consultas del proyecto final de SIG - CentroGeo
-Como le hago para trabajar
-
-  mejor
+Como le hago para trabajar  mejor
 
 
 Otros

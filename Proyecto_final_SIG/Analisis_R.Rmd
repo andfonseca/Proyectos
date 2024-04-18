@@ -37,12 +37,12 @@ pacman::p_load(sf, spdep, dplyr, tmap, RColorBrewer, plot)
 ```
 
 ```{r cargar_capas, message=FALSE}
-eve <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Analisis_Espacial/PROYECTO_AE/GIS/desinventar_2.shp")
-bar <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Analisis_Espacial/PROYECTO_AE/GIS/barrio_vereda_2.shp")
-alt_cur <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Analisis_Espacial/PROYECTO_AE/GIS/Altura.shp")
-urban <- vect ("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Analisis_Espacial/PROYECTO_AE/GIS/barrio_urbano.shp")
-adm_urb <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Analisis_Espacial/PROYECTO_AE/GIS/adm_urbano.shp")
-Eve_barrio <- st_read("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Analisis_Espacial/PROYECTO_AE/GIS/Eventos_barrio.shp")
+eve <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Sistemas_Informacion_Geografica/PROYECTO_SIG/GIS/desinventar_2.shp")
+bar <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Sistemas_Informacion_Geografica/PROYECTO_SIG/GIS/barrio_vereda_2.shp")
+alt_cur <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Sistemas_Informacion_Geografica/PROYECTO_SIG/GIS/Altura.shp")
+urban <- vect ("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Sistemas_Informacion_Geografica/PROYECTO_SIG/GIS/barrio_urbano.shp")
+adm_urb <- vect("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Sistemas_Informacion_Geografica/PROYECTO_SIG/GIS/adm_urbano.shp")
+Eve_barrio <- st_read("C:/Users/jfonseca/OneDrive - centrogeo.edu.mx/PhD_CIG/2_Cuatrimestre/Sistemas_Informacion_Geografica/PROYECTO_SIG/GIS/Eventos_barrio.shp")
 
 ```
 

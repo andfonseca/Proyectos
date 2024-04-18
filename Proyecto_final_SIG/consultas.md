@@ -4,9 +4,13 @@
 `-- Crear extensiones
 create extension postgis;`
 
-`-- Eliminar columnas que no tienen datos`
-`ALTER TABLE desinventar`
-`DROP COLUMN magnitude;`
+```sql
+-- Eliminar columnas que no tienen datos
+ALTER TABLE desinventar
+DROP COLUMN magnitude;
+```
+
+
 
 ALTER TABLE desinventar 
 DROP COLUMN disasterid;

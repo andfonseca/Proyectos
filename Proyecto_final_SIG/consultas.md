@@ -1,5 +1,6 @@
 # Consultas del proyecto final de SIG - CentroGeo
-
+Como le hago para trabajar
+  mejor
 ## Códigos utilizados para depurar base de datos
 `-- Crear extensiones
 create extension postgis;`

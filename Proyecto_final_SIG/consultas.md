@@ -491,7 +491,7 @@ using GIST (geom);
 `	-- Spatial Clustering (NNH) para generar una capa Convex Hull de agrupación para`  
 `	-- nuestros puntos. Los criterios son: Agrupar grupos de 3 puntos que`  
 `	-- se encuentren en una proximidad de 500 metros. La capa resultante es CNNH1,`  
-`	-- la cual cargamos en QGIS y desde allí la vinculamos a nuestra base de datos.``  
+`	-- la cual cargamos en QGIS y desde allí la vinculamos a nuestra base de datos.`  
 
 `-- Para finalizar la validación, identificaremos los centroides de los convex hull`  
 `	-- generados.`  
@@ -501,11 +501,12 @@ using GIST (geom);
 alter table "CNNH1" 
 add column centroide GEOMETRY(Point);
 
-	-- Generamos los centroides con la función st_centroid
+`	-- Generamos los centroides con la función st_centroid`
+```sql
 update "CNNH1"
 set centroide = ST_Centroid(geom);
 ```
-`-- A continuación, generaremos buffers de 500 metros alrededor de los centroides`  
+`-- A continuación, generaremos buffers de 500 metros alrededor de los centroides`   
 `	-- generados`
 ```sql
 create table eventos_posibles as
@@ -516,9 +517,9 @@ select UpdateGeometrySRID('eventos_posibles', 'buffer', 3857);
 
 create index idx_eventos_posibles on eventos_posibles using GIST (buffer);
 ```
-`-- Para terminar la validación, crearemos una tabla para los buffers de los datos
-	-- oficiales sobre deslizamientos, para identificar cómo se relacionan 
-	-- en el mapa`
+`-- Para terminar la validación, crearemos una tabla para los buffers de los datos`  
+`	-- oficiales sobre deslizamientos, para identificar cómo se relacionan`   
+`	-- en el mapa`
  ```sql
 create table eventos_confirmados as
 select id, st_buffer(geom, 1000) as buffer
@@ -528,9 +529,9 @@ select UpdateGeometrySRID('eventos_confirmados', 'buffer', 3857);
 
 create index idx_eventos_confirmados on eventos_confirmados using GIST (buffer);
 ```
-`-- Para efectos de pulido y agrupación, construimos dos tablas que contiene
-	-- los puntos de desinventar que coinciden con los buffers tanto de SIMMA 
-	-- como de DI.`
+`-- Para efectos de pulido y agrupación, construimos dos tablas que contiene`  
+`	-- los puntos de desinventar que coinciden con los buffers tanto de SIMMA`  
+`	-- como de DI.`
  ```sql
 create table eventos_confirmados_puntos as
 select dv. *
@@ -548,18 +549,18 @@ on st_within(des.geom, ep.buffer);
 
 create index idx_eventos_posibles_puntos on eventos_posibles_puntos using GIST (geom);
 ```
-`-- Adicionalmente, para pulir mejor la información, haremos un último join entre
-	-- los buffers y los suelos con condición de amenaza alta por movimientos en masa
+`-- Adicionalmente, para pulir mejor la información, haremos un último join entre`  
+`	-- los buffers y los suelos con condición de amenaza alta por movimientos en masa`  
 
-	-- Primero creamos una tabla nueva de eventos totales`
+`	-- Primero creamos una tabla nueva de eventos totales`
  ```sql
 select * into eventos_total from eventos_confirmados
 union
 select * from eventos_posibles;
-
-	-- Y luego usamos la función st_intersects para identificar la interacción entre
-		-- los polígonos de buffers y de amenazas.
-
+```
+`	-- Y luego usamos la función st_intersects para identificar la interacción entre`  
+`		-- los polígonos de buffers y de amenazas.`
+```sql
 alter table "Amenaza_por_Movimientos_en_Masa" 
    alter column geom
    type Geometry(MultiPolygon, 3857)
@@ -574,8 +575,8 @@ where apmem.grado_amen = 'Alta';
 
 create index idx_suelo_amenaza_eventos on suelo_amenaza_eventos using GIST (geom);
 ```
-`-- También crearemos una tabla para generar los polígonos de las zonas con condición
-	-- de amenaza alta por movimientos en masa que NO se intersectan con nuestros datos.`
+`-- También crearemos una tabla para generar los polígonos de las zonas con condición`  
+`	-- de amenaza alta por movimientos en masa que NO se intersectan con nuestros datos.`
  ```sql
 create table suelo_amenaza_no_eventos as
 select apmem.*
@@ -588,8 +589,9 @@ and not exists (
 );
 
 create index idx_suelo_amenaza_no_eventos on suelo_amenaza_no_eventos using GIST (geom);
-
--- También podemos contabilizar los eventos en tablas ya existentes
+```
+`-- También podemos contabilizar los eventos en tablas ya existentes`
+```sql
 alter table simma_v
 add column num_eventos INT;
 
@@ -616,9 +618,9 @@ set num_eventos = (
 from eventos_posibles ep
 where "CNNH1".id = ep.id;
 ```
-`-- Y en las comunas y corregimientos de la ciudad, para identificar según la
-	-- estratificación socioeconómica los sectores más vulnerables según el nivel
-	-- de registros de afectaciones.`
+`-- Y en las comunas y corregimientos de la ciudad, para identificar según la`  
+`	-- estratificación socioeconómica los sectores más vulnerables según el nivel`  
+`	-- de registros de afectaciones.`
 ```sql
 alter table limite_administrativo 
 add column num_eventos_posibles int;
@@ -636,9 +638,9 @@ set num_eventos_posibles = (
 )
 where la.geom is not null;
 ```
-`-- Por último, contabilizamos los eventos por comuna. Para hacer esto, contaremos
-	-- tanto los que cayeron dentro del buffer de eventos oficiales como en los
-	-- de eventos no oficiales y los sumaremos posteriormente`
+`-- Por último, contabilizamos los eventos por comuna. Para hacer esto, contaremos`  
+`	-- tanto los que cayeron dentro del buffer de eventos oficiales como en los`  
+`	-- de eventos no oficiales y los sumaremos posteriormente`
  ```sql
 alter table limite_administrativo 
 add column num_eventos_confirmados int;

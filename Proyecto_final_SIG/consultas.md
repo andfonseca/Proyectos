@@ -1,4 +1,4 @@
-# Consultas del proyecto finnal de SIG - CentroGeo
+# Consultas del proyecto final de SIG - CentroGeo
 
 ## Códigos utilizados para depurar base de datos
 `-- Crear extensiones
@@ -424,3 +424,237 @@ UPDATE barrio_vereda_2
 SET grado_amenaza = NULL;
 ```
 ## Códigos utilizados para crear mapas
+`-- Validación dentro de los límites administrativos de Medellín`
+`-- Validación de los datos del SIMMA`
+```sql
+create table simma_v as
+select s.geom, id, inv_movimi, tipo, subtipo, a. altura, dn
+from simma s
+join altura a
+on st_intersects(s.geom, a.geom)
+where a.altura >= 1.500;
+
+create index idx_geom_on_simma_v
+on simma_v
+using GIST (geom);
+
+	-- Validación de los datos de DI
+create table di_v as
+select d. *, a.dn
+from deslizamientos d
+join altura a
+on st_intersects(d.geom, a.geom)
+where a.dn >= 1.500;
+
+create index idx_geom_on_di_v
+on di_v
+using GIST (geom);
+```
+`-- Creación de buffers para identificar coincidencias
+	-- Inicialmente, verificamos los elementos de di_v que están en cercanías a los 
+	-- elementos de simma_v
+		-- buffer inicial`
+```sql
+select id, ST_Buffer(geom, 1000) AS geom_buffer
+from simma_v;
+		-- Verificación con st_within
+select di.id
+from di_v di
+join (
+  select id, st_buffer(geom, 1000) as geom_buffer
+  from simma_v
+) as buffers
+on ST_Within(di.geom, buffers.geom_buffer);
+
+		-- Verificación de elementos por fuera del buffer
+create table deslizamientos_v as
+select di.*
+from di_v di
+left join (
+    select st_buffer(geom, 1000) as geom_buffer
+    from simma_v
+) as buffers
+on st_within(di.geom, buffers.geom_buffer)
+where buffers.geom_buffer is null;
+
+create index idx_geom_on_deslizamientos_v
+on deslizamientos_v
+using GIST (geom);
+```
+`-- A continuación, hacemos la clusterización de los datos en CrimeStat
+	-- En el software CrimeStat, cargamos la capa de deslizamientos validadeos, o 
+	-- deslizamientos_v. Utilizaremos el método de Nearest Neighbor Hierarchical
+	-- Spatial Clustering (NNH) para generar una capa Convex Hull de agrupación para
+	-- nuestros puntos. Los criterios son: Agrupar grupos de 3 puntos que 
+	-- se encuentren en una proximidad de 500 metros. La capa resultante es CNNH1,
+	-- la cual cargamos en QGIS y desde allí la vinculamos a nuestra base de datos.
+
+-- Para finalizar la validación, identificaremos los centroides de los convex hull
+	-- generados.
+
+	-- Creamos la columna de centroide en CNNH1`
+```sql
+alter table "CNNH1" 
+add column centroide GEOMETRY(Point);
+
+	-- Generamos los centroides con la función st_centroid
+update "CNNH1"
+set centroide = ST_Centroid(geom);
+```
+`-- A continuación, generaremos buffers de 500 metros alrededor de los centroides 
+	-- generados`
+```sql
+create table eventos_posibles as
+select id, st_buffer(centroide, 500) as buffer
+from "CNNH1";
+
+select UpdateGeometrySRID('eventos_posibles', 'buffer', 3857);
+
+create index idx_eventos_posibles on eventos_posibles using GIST (buffer);
+```
+`-- Para terminar la validación, crearemos una tabla para los buffers de los datos
+	-- oficiales sobre deslizamientos, para identificar cómo se relacionan 
+	-- en el mapa`
+ ```sql
+create table eventos_confirmados as
+select id, st_buffer(geom, 1000) as buffer
+from simma_v;
+
+select UpdateGeometrySRID('eventos_confirmados', 'buffer', 3857);
+
+create index idx_eventos_confirmados on eventos_confirmados using GIST (buffer);
+```
+`-- Para efectos de pulido y agrupación, construimos dos tablas que contiene
+	-- los puntos de desinventar que coinciden con los buffers tanto de SIMMA 
+	-- como de DI.`
+ ```sql
+create table eventos_confirmados_puntos as
+select dv. *
+from di_v as dv
+join eventos_confirmados as ec
+on st_within(dv.geom, ec.buffer);
+
+create index idx_eventos_confirmados_puntos on eventos_confirmados_puntos using GIST (geom);
+
+create table eventos_posibles_puntos as
+select des. *
+from deslizamientos_v as des
+join eventos_posibles as ep
+on st_within(des.geom, ep.buffer);
+
+create index idx_eventos_posibles_puntos on eventos_posibles_puntos using GIST (geom);
+```
+`-- Adicionalmente, para pulir mejor la información, haremos un último join entre
+	-- los buffers y los suelos con condición de amenaza alta por movimientos en masa
+
+	-- Primero creamos una tabla nueva de eventos totales`
+ ```sql
+select * into eventos_total from eventos_confirmados
+union
+select * from eventos_posibles;
+
+	-- Y luego usamos la función st_intersects para identificar la interacción entre
+		-- los polígonos de buffers y de amenazas.
+
+alter table "Amenaza_por_Movimientos_en_Masa" 
+   alter column geom
+   type Geometry(MultiPolygon, 3857)
+   using ST_Transform(geom, 3857);
+
+create table suelo_amenaza_eventos as
+select apmem. *
+from "Amenaza_por_Movimientos_en_Masa" apmem
+join eventos_total et
+on st_intersects(et.buffer, apmem.geom)
+where apmem.grado_amen = 'Alta';
+
+create index idx_suelo_amenaza_eventos on suelo_amenaza_eventos using GIST (geom);
+```
+`-- También crearemos una tabla para generar los polígonos de las zonas con condición
+	-- de amenaza alta por movimientos en masa que NO se intersectan con nuestros datos.`
+ ```sql
+create table suelo_amenaza_no_eventos as
+select apmem.*
+from "Amenaza_por_Movimientos_en_Masa" apmem
+where apmem.grado_amen = 'Alta'
+and not exists (
+    select 1
+    from eventos_total et
+    where st_intersects(et.buffer, apmem.geom)
+);
+
+create index idx_suelo_amenaza_no_eventos on suelo_amenaza_no_eventos using GIST (geom);
+
+-- También podemos contabilizar los eventos en tablas ya existentes
+alter table simma_v
+add column num_eventos INT;
+
+update simma_v
+set num_eventos = (
+    select COUNT(*)
+    from eventos_confirmados_puntos ecp
+    where st_within(ecp.geom, ec.buffer)
+    and simma_v.id = ec.id 
+)
+from eventos_confirmados ec
+where simma_v.id = ec.id;
+
+alter table "CNNH1" 
+add column num_eventos int;
+
+update "CNNH1" 
+set num_eventos = (
+    select count(*)
+    from eventos_posibles_puntos epp
+    where st_within(epp.geom, ep.buffer)
+    and "CNNH1".id = ep.id 
+)
+from eventos_posibles ep
+where "CNNH1".id = ep.id;
+```
+`-- Y en las comunas y corregimientos de la ciudad, para identificar según la
+	-- estratificación socioeconómica los sectores más vulnerables según el nivel
+	-- de registros de afectaciones.`
+```sql
+alter table limite_administrativo 
+add column num_eventos_posibles int;
+
+select la.nombre, count(epp.id) as puntos_dentro
+from limite_administrativo la
+left join eventos_posibles_puntos epp on st_contains(la.geom, epp.geom)
+group by la.nombre;
+
+update limite_administrativo la
+set num_eventos_posibles = (
+    select COUNT(epp.id)
+    from eventos_posibles_puntos epp
+    where st_contains(la.geom, epp.geom)
+)
+where la.geom is not null;
+```
+`-- Por último, contabilizamos los eventos por comuna. Para hacer esto, contaremos
+	-- tanto los que cayeron dentro del buffer de eventos oficiales como en los
+	-- de eventos no oficiales y los sumaremos posteriormente`
+ ```sql
+alter table limite_administrativo 
+add column num_eventos_confirmados int;
+
+select la.nombre, COUNT(ecp.id) as puntos_dentro
+from limite_administrativo la
+left join eventos_confirmados_puntos ecp on st_contains(la.geom, ecp.geom)
+group by la.nombre;
+
+update limite_administrativo la
+set num_eventos_confirmados = (
+    select count(ecp.id)
+    from eventos_confirmados_puntos ecp
+    where st_contains(la.geom, ecp.geom)
+)
+where la.geom is not null;
+
+alter table limite_administrativo 
+add column num_eventos_total int;
+
+update limite_administrativo
+set num_eventos_total = num_eventos_confirmados + num_eventos_posibles;
+```

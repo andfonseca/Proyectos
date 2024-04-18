@@ -1,9 +1,9 @@
 ---
 title: "Proyecto final Análisis Espacial"
-author: "Bolívar Morales,
+author: "
           Andrey Fonseca,
           Luis Rivera,
-          Diana Hernández. 
+          Raúl Sánchez,
 "
 date: "2024-04-16"
 output: 

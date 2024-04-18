@@ -424,8 +424,8 @@ UPDATE barrio_vereda_2
 SET grado_amenaza = NULL;
 ```
 ## Códigos utilizados para crear mapas
-`-- Validación dentro de los límites administrativos de Medellín`
-`-- Validación de los datos del SIMMA`
+```-- Validación dentro de los límites administrativos de Medellín`
+	-- Validación de los datos del SIMMA```
 ```sql
 create table simma_v as
 select s.geom, id, inv_movimi, tipo, subtipo, a. altura, dn

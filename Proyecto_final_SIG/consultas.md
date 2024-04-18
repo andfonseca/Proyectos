@@ -1,8 +1,8 @@
 # Consultas, proyecto final de SIG-2024-I [CentroGeo](https://www.centrogeo.org.mx/quienes-somos)
 **Integrantes:**
-- Raúl Sánchez Márquez
 - Andrey Julian Fonseca Soler
 - Luis Alejandro Rivera Flórez
+- Raúl Sánchez Márquez
 
 En el siguiente archivo se evidencian las consultas realizadas a lo largo del proyecto final denominado  
 Mapeo de eventos por deslizamientos a partir del análisis de datos oficiales y no oficiales en Medellín, Colombia
